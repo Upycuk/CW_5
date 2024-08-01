@@ -3,16 +3,16 @@ import psycopg2
 from typing import Any
 
 employer_ids = [
-    104836511,
-    104876975,
-    104873249,
-    103920981,
-    104139507,
-    104653370,
-    86033363,
-    104529232,
-    104427598,
-    101883988,
+    5775464,
+    4748227,
+    3643187,
+    10609539,
+    988247,
+    5402159,
+    5912899,
+    1272187,
+    4492703,
+    4244677,
 ]
 
 
@@ -25,6 +25,7 @@ def __get_employee_data() -> list[dict]:
     for employer_id in employer_ids:
         url_emp = f"https://api.hh.ru/employers/{employer_id}"
         employer_info = requests.get(url_emp, ).json()
+        print(employer_info)
         employers.append(employer_info)
 
     return employers
@@ -37,9 +38,10 @@ def __get_vacancies_data() -> list[dict]:
     """
     vacancy = []
     for vacacies_id in employer_ids:
-        url_vac = f"https://api.hh.ru/vacancies?employer_id={vacacies_id}"
+        url_vac = f"https://api.hh.ru/vacancies/{vacacies_id}"
         vacancy_info = requests.get(url_vac, params={'page': 0, 'per_page': 100}).json()
-        vacancy.extend(vacancy_info['items'])
+        print(vacancy_info)
+        vacancy.extend(vacancy_info)
     return vacancy
 
 
