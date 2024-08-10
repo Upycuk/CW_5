@@ -25,7 +25,6 @@ def __get_employee_data() -> list[dict]:
     for employer_id in employer_ids:
         url_emp = f"https://api.hh.ru/employers/{employer_id}"
         employer_info = requests.get(url_emp, ).json()
-        print(employer_info)
         employers.append(employer_info)
 
     return employers
@@ -40,7 +39,6 @@ def __get_vacancies_data() -> list[dict]:
     for vacacies_id in employer_ids:
         url_vac = f"https://api.hh.ru/vacancies/{vacacies_id}"
         vacancy_info = requests.get(url_vac, params={'page': 0, 'per_page': 100}).json()
-        print(vacancy_info)
         vacancy.extend(vacancy_info)
     return vacancy
 
@@ -61,26 +59,27 @@ def create_database(database_name: str, params: dict) -> None:
     conn = psycopg2.connect(dbname=database_name, **params)
 
     with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE employers (
-                employer_id INTEGER,
+        cur.execute("""            
+            CREATE TABLE employers (                
+                employer_id INTEGER PRIMARY KEY,
                 employer_name text not null,
                 employer_area TEXT not null,
-                url TEXT,
+                employer_url TEXT,
                 open_vacancies INTEGER
-            )
+            );
         """)
 
     with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE vacancy (
-                vacancy_id INTEGER,
+        cur.execute("""             
+            CREATE TABLE vacancy (                
+                vacancy_id INTEGER PRIMARY KEY,
                 vacancy_name VARCHAR,
                 vacancy_area VARCHAR,
                 salary INTEGER,
                 employer_id INTEGER,
-                vacancy_url VARCHAR
-            )
+                vacancy_url VARCHAR,
+                vacancy_employers INTEGER REFERENCES employers(employer_id) ON UPDATE CASCADE
+            );
         """)
 
     conn.commit()
@@ -96,7 +95,7 @@ def save_data_to_database_emp(data_emp: list[dict[str, Any]], database_name: str
     with conn.cursor() as cur:
         for emp in data_emp:
             cur.execute("""
-                INSERT INTO employers (employer_id, employer_name, employer_area, url, open_vacancies)
+                INSERT INTO employers (employer_id, employer_name, employer_area, employer_url, open_vacancies)
                 VALUES (%s, %s, %s, %s, %s)
                 """,
                         (emp['id'], emp['name'], emp['area']['name'], emp['alternate_url'], emp['open_vacancies']))
@@ -127,6 +126,7 @@ def save_data_to_database_vac(data_vac: list[dict[str, Any]], database_name: str
                     """,
                             (vac.get('id'), vac['name'], vac['area']['name'], vac['salary']['from'],
                              vac['employer']['id'], vac['alternate_url']))
+
 
     conn.commit()
     conn.close()
