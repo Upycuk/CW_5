@@ -3,16 +3,16 @@ import psycopg2
 from typing import Any
 
 employer_ids = [
-    104836511,
-    104876975,
-    104873249,
-    103920981,
-    104139507,
-    104653370,
-    86033363,
-    104529232,
-    104427598,
-    101883988,
+    '3127',
+    '3776',
+    '1122462',
+    '2180',
+    '87021',
+    '1740',
+    '80',
+    '4181',
+    '15478',
+    '78638'
 ]
 
 
@@ -30,16 +30,16 @@ def __get_employee_data() -> list[dict]:
     return employers
 
 
-def __get_vacancies_data() -> list[dict]:
+def __get_vacancies_data() -> list:
     """
     функция для получения данных о вакансиях с сайта HH.ru
     :return: список вакансий.
     """
     vacancy = []
-    for vacacies_id in employer_ids:
-        url_vac = f"https://api.hh.ru/vacancies?employer_id={vacacies_id}"
-        vacancy_info = requests.get(url_vac, params={'page': 0, 'per_page': 100}).json()
-        vacancy.extend(vacancy_info['items'])
+    for employer_id in employer_ids:
+        url_vac = f"https://api.hh.ru/vacancies/"
+        vacancy_info = requests.get(url_vac, params={'page': 0, 'per_page': 100, 'employer_id': employer_id}).json()['items']
+        vacancy.extend(vacancy_info)
     return vacancy
 
 
@@ -59,26 +59,26 @@ def create_database(database_name: str, params: dict) -> None:
     conn = psycopg2.connect(dbname=database_name, **params)
 
     with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE employers (
-                employer_id INTEGER,
+        cur.execute("""            
+            CREATE TABLE employers (                
+                employer_id INTEGER PRIMARY KEY,
                 employer_name text not null,
                 employer_area TEXT not null,
-                url TEXT,
+                employer_url TEXT,
                 open_vacancies INTEGER
-            )
+            );
         """)
 
     with conn.cursor() as cur:
-        cur.execute("""
-            CREATE TABLE vacancy (
-                vacancy_id INTEGER,
+        cur.execute("""             
+            CREATE TABLE vacancy (                
+                vacancy_id INTEGER PRIMARY KEY,
                 vacancy_name VARCHAR,
                 vacancy_area VARCHAR,
                 salary INTEGER,
-                employer_id INTEGER,
-                vacancy_url VARCHAR
-            )
+                employer_id INTEGER REFERENCES employers(employer_id) ON UPDATE CASCADE,
+                vacancy_url VARCHAR                
+            );
         """)
 
     conn.commit()
@@ -94,7 +94,7 @@ def save_data_to_database_emp(data_emp: list[dict[str, Any]], database_name: str
     with conn.cursor() as cur:
         for emp in data_emp:
             cur.execute("""
-                INSERT INTO employers (employer_id, employer_name, employer_area, url, open_vacancies)
+                INSERT INTO employers (employer_id, employer_name, employer_area, employer_url, open_vacancies)
                 VALUES (%s, %s, %s, %s, %s)
                 """,
                         (emp['id'], emp['name'], emp['area']['name'], emp['alternate_url'], emp['open_vacancies']))
