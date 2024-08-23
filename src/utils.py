@@ -3,16 +3,16 @@ import psycopg2
 from typing import Any
 
 employer_ids = [
-    5775464,
-    4748227,
-    3643187,
-    10609539,
-    988247,
-    5402159,
-    5912899,
-    1272187,
-    4492703,
-    4244677,
+    '3127',
+    '3776',
+    '1122462',
+    '2180',
+    '87021',
+    '1740',
+    '80',
+    '4181',
+    '15478',
+    '78638'
 ]
 
 
@@ -30,15 +30,15 @@ def __get_employee_data() -> list[dict]:
     return employers
 
 
-def __get_vacancies_data() -> list[dict]:
+def __get_vacancies_data() -> list:
     """
     функция для получения данных о вакансиях с сайта HH.ru
     :return: список вакансий.
     """
     vacancy = []
-    for vacacies_id in employer_ids:
-        url_vac = f"https://api.hh.ru/vacancies/{vacacies_id}"
-        vacancy_info = requests.get(url_vac, params={'page': 0, 'per_page': 100}).json()
+    for employer_id in employer_ids:
+        url_vac = f"https://api.hh.ru/vacancies/"
+        vacancy_info = requests.get(url_vac, params={'page': 0, 'per_page': 100, 'employer_id': employer_id}).json()['items']
         vacancy.extend(vacancy_info)
     return vacancy
 
@@ -76,9 +76,8 @@ def create_database(database_name: str, params: dict) -> None:
                 vacancy_name VARCHAR,
                 vacancy_area VARCHAR,
                 salary INTEGER,
-                employer_id INTEGER,
-                vacancy_url VARCHAR,
-                vacancy_employers INTEGER REFERENCES employers(employer_id) ON UPDATE CASCADE
+                employer_id INTEGER REFERENCES employers(employer_id) ON UPDATE CASCADE,
+                vacancy_url VARCHAR                
             );
         """)
 
@@ -126,7 +125,6 @@ def save_data_to_database_vac(data_vac: list[dict[str, Any]], database_name: str
                     """,
                             (vac.get('id'), vac['name'], vac['area']['name'], vac['salary']['from'],
                              vac['employer']['id'], vac['alternate_url']))
-
 
     conn.commit()
     conn.close()
